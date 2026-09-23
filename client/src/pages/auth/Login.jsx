@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import toast from 'react-hot-toast';
+import useAuth from '../../hooks/useAuth';
 
 const Login = () => {
+  const { register, login, authLoading } = useAuth();
+
   const navigate = useNavigate();
 
   const [isLogin, setIsLogin] = useState(true);
@@ -36,21 +39,33 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setLoading(true);
+    const result = isLogin
+      ? await login({
+          email: formData.email,
+          password: formData.password,
+        })
+      : await register({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        });
 
-    // Temporary frontend behavior.
-    // Connect to AuthContext/API later.
-    setTimeout(() => {
-      toast.success(
-        isLogin ? 'Signed in successfully.' : 'Account created successfully.',
-      );
+    if (result.success) {
+      toast.success(result.message);
 
-      setLoading(false);
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+      });
+
       navigate('/');
-    }, 700);
+    } else {
+      toast.error(result.message);
+    }
   };
 
   const handleGoogleSignIn = () => {
@@ -179,10 +194,10 @@ const Login = () => {
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={authLoading}
             className="group flex h-12 w-full cursor-pointer items-center justify-center gap-3 bg-black px-6 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading
+            {authLoading
               ? isLogin
                 ? 'Signing in...'
                 : 'Creating account...'

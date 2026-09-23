@@ -1,5 +1,11 @@
 import { createContext, useCallback, useEffect, useState } from 'react';
-import api from '../lib/api';
+
+import {
+  getMe,
+  loginUser,
+  logoutUser,
+  registerUser,
+} from '../services/auth.service';
 
 const AuthContext = createContext(null);
 
@@ -12,10 +18,11 @@ export const AuthProvider = ({ children }) => {
 
   const [logoutLoading, setLogoutLoading] = useState(false);
 
-  // Get currently logged-in user
-  const getMe = useCallback(async () => {
+  // get currently logged-in user
+  const getUser = useCallback(async () => {
+    setUserLoading(true);
     try {
-      const { data } = await api.get('/auth/me');
+      const data = await getMe();
 
       if (data.success) {
         setUser(data.user);
@@ -29,18 +36,21 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Register
-  const registerUser = async (formData) => {
+  // register
+  const register = async (formData) => {
     setAuthLoading(true);
 
     try {
-      const { data } = await api.post('/auth/register', formData);
+      const data = await registerUser(formData);
 
       if (data.success) {
         setUser(data.user);
       }
 
-      return data;
+      return {
+        success: data.success,
+        message: data.message,
+      };
     } catch (error) {
       return {
         success: false,
@@ -51,18 +61,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login
-  const loginUser = async (formData) => {
+  // login
+  const login = async (formData) => {
     setAuthLoading(true);
 
     try {
-      const { data } = await api.post('/auth/login', formData);
+      const data = await loginUser(formData);
 
       if (data.success) {
         setUser(data.user);
       }
 
-      return data;
+      return {
+        success: data.success,
+        message: data.message,
+      };
     } catch (error) {
       return {
         success: false,
@@ -73,18 +86,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout
-  const logoutUser = async () => {
+  // logout
+  const logout = async () => {
     setLogoutLoading(true);
 
     try {
-      const { data } = await api.post('/auth/logout');
+      const data = await logoutUser();
 
       if (data.success) {
         setUser(null);
       }
 
-      return data;
+      return {
+        success: data.success,
+        message: data.message,
+      };
     } catch (error) {
       return {
         success: false,
@@ -96,8 +112,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    getMe();
-  }, [getMe]);
+    getUser();
+  }, [getUser]);
 
   const value = {
     user,
@@ -107,10 +123,10 @@ export const AuthProvider = ({ children }) => {
     authLoading,
     logoutLoading,
 
-    getMe,
-    registerUser,
-    loginUser,
-    logoutUser,
+    getUser,
+    register,
+    login,
+    logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

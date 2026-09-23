@@ -11,22 +11,15 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
+import useAuth from '../../hooks/useAuth';
+import toast from 'react-hot-toast';
 
 const Navbar = () => {
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   const accountRef = useRef(null);
-
-  // Temporary frontend auth state.
-  // Keep null to preview logged-out navbar.
-  const user = null;
-
-  // Use this temporarily to preview logged-in navbar:
-  // const user = {
-  //   name: 'John Agata',
-  //   email: 'john@example.com',
-  // };
 
   const cartCount = 0;
   const wishlistCount = 0;
@@ -56,10 +49,17 @@ const Navbar = () => {
     setMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    // Connect logoutUser() here later.
-    setAccountOpen(false);
-    setMenuOpen(false);
+  const handleLogout = async () => {
+    const result = await logout();
+
+    if (result.success) {
+      toast.success(result.message);
+
+      setAccountOpen(false);
+      setMenuOpen(false);
+    } else {
+      toast.error(result.message);
+    }
   };
 
   return (
