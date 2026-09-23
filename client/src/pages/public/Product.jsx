@@ -15,8 +15,11 @@ import toast from 'react-hot-toast';
 
 import RelatedProducts from '../../components/public/RelatedProducts';
 import { getProductBySlug } from '../../services/product.service';
+import useCart from '../../hooks/useCart';
 
 const Product = () => {
+  const { addToCart } = useCart();
+
   const { slug } = useParams();
 
   const [productData, setProductData] = useState(null);
@@ -54,11 +57,27 @@ const Product = () => {
     fetchProduct();
   }, [slug]);
 
+  // handle add to cart
   const handleAddToCart = () => {
     if (productData.sizes?.length > 0 && !selectedSize) {
       toast.error('Please select a size.');
       return;
     }
+
+    if (productData.colors?.length > 0 && !selectedColor) {
+      toast.error('Please select a color.');
+      return;
+    }
+
+    addToCart({
+      productId: productData._id,
+      name: productData.name,
+      slug: productData.slug,
+      image: productData.images?.[0]?.url,
+      price: productData.price,
+      size: selectedSize || null,
+      color: selectedColor || null,
+    });
 
     toast.success(`${productData.name} added to cart.`);
   };

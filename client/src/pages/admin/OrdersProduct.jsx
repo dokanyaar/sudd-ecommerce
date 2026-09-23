@@ -1,203 +1,91 @@
-import { useState } from 'react';
-import { Package, ShoppingBag } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import {
+  CheckCircle2,
+  Clock3,
+  Package,
+  ShoppingBag,
+  Truck,
+  XCircle,
+} from 'lucide-react';
+
 import toast from 'react-hot-toast';
 
-const staticOrders = [
-  {
-    _id: '68d10a7b001',
-    createdAt: '2026-09-22T06:30:00.000Z',
-    status: 'Order Placed',
-    paymentMethod: 'M-Pesa',
-    payment: true,
-    amount: 6300,
-
-    address: {
-      firstName: 'James',
-      lastName: 'Deng',
-      street: 'Kenyatta Avenue',
-      city: 'Nakuru',
-      state: 'Nakuru',
-      country: 'Kenya',
-      zipcode: '20100',
-      phone: '0712345678',
-    },
-
-    items: [
-      {
-        _id: '1',
-        name: 'Essential Cotton T-Shirt',
-        price: 1800,
-        quantity: 1,
-        size: 'L',
-      },
-      {
-        _id: '2',
-        name: 'Classic White Sneakers',
-        price: 4500,
-        quantity: 1,
-        size: '42',
-      },
-    ],
-  },
-
-  {
-    _id: '68d10a7b002',
-    createdAt: '2026-09-21T14:20:00.000Z',
-    status: 'Packing',
-    paymentMethod: 'M-Pesa',
-    payment: true,
-    amount: 7100,
-
-    address: {
-      firstName: 'Mary',
-      lastName: 'Atong',
-      street: 'Section 58',
-      city: 'Nakuru',
-      state: 'Nakuru',
-      country: 'Kenya',
-      zipcode: '20100',
-      phone: '0723456789',
-    },
-
-    items: [
-      {
-        _id: '3',
-        name: 'Everyday Hoodie',
-        price: 3200,
-        quantity: 1,
-        size: 'M',
-      },
-      {
-        _id: '5',
-        name: 'Classic Denim Jacket',
-        price: 3900,
-        quantity: 1,
-        size: 'M',
-      },
-    ],
-  },
-
-  {
-    _id: '68d10a7b003',
-    createdAt: '2026-09-20T09:15:00.000Z',
-    status: 'Shipped',
-    paymentMethod: 'Cash on Delivery',
-    payment: false,
-    amount: 9000,
-
-    address: {
-      firstName: 'Peter',
-      lastName: 'Chol',
-      street: 'Milimani Estate',
-      city: 'Nakuru',
-      state: 'Nakuru',
-      country: 'Kenya',
-      zipcode: '20100',
-      phone: '0734567890',
-    },
-
-    items: [
-      {
-        _id: '6',
-        name: 'Casual Leather Sneakers',
-        price: 4500,
-        quantity: 2,
-        size: '43',
-      },
-    ],
-  },
-
-  {
-    _id: '68d10a7b004',
-    createdAt: '2026-09-19T11:45:00.000Z',
-    status: 'Out for Delivery',
-    paymentMethod: 'M-Pesa',
-    payment: true,
-    amount: 7300,
-
-    address: {
-      firstName: 'Rebecca',
-      lastName: 'Ajak',
-      street: 'Lanet',
-      city: 'Nakuru',
-      state: 'Nakuru',
-      country: 'Kenya',
-      zipcode: '20100',
-      phone: '0745678901',
-    },
-
-    items: [
-      {
-        _id: '4',
-        name: 'Minimal Backpack',
-        price: 3500,
-        quantity: 1,
-      },
-      {
-        _id: '7',
-        name: 'Classic Sunglasses',
-        price: 1800,
-        quantity: 1,
-      },
-      {
-        _id: '1',
-        name: 'Essential Cotton T-Shirt',
-        price: 2000,
-        quantity: 1,
-        size: 'XL',
-      },
-    ],
-  },
-
-  {
-    _id: '68d10a7b005',
-    createdAt: '2026-09-18T08:10:00.000Z',
-    status: 'Delivered',
-    paymentMethod: 'M-Pesa',
-    payment: true,
-    amount: 5500,
-
-    address: {
-      firstName: 'Samuel',
-      lastName: 'Majok',
-      street: 'Free Area',
-      city: 'Nakuru',
-      state: 'Nakuru',
-      country: 'Kenya',
-      zipcode: '20100',
-      phone: '0756789012',
-    },
-
-    items: [
-      {
-        _id: '8',
-        name: 'Minimal Wrist Watch',
-        price: 5500,
-        quantity: 1,
-      },
-    ],
-  },
-];
+import { getAllOrders, updateOrderStatus } from '../../services/order.service';
 
 const OrdersProduct = () => {
-  const [orders, setOrders] = useState(staticOrders);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
-  const statusHandler = (e, orderId) => {
-    const status = e.target.value;
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order._id === orderId
-          ? {
-              ...order,
-              status,
-            }
-          : order,
-      ),
-    );
+        const data = await getAllOrders();
 
-    toast.success(`Order status updated to ${status}.`);
+        if (data.success) {
+          setOrders(data.orders);
+        }
+      } catch (error) {
+        console.error('Failed to fetch admin orders:', error);
+
+        setError(error.response?.data?.message || 'Failed to load orders.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  const statusHandler = async (event, orderId) => {
+    const status = event.target.value;
+
+    try {
+      setUpdatingOrderId(orderId);
+
+      const data = await updateOrderStatus(orderId, status);
+
+      if (data.success) {
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === orderId
+              ? {
+                  ...order,
+                  orderStatus: data.order.orderStatus,
+                }
+              : order,
+          ),
+        );
+
+        toast.success(`Order status updated to ${formatStatus(status)}.`);
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+
+      toast.error(
+        error.response?.data?.message || 'Failed to update order status.',
+      );
+    } finally {
+      setUpdatingOrderId(null);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-72 items-center justify-center">
+        <p className="text-sm text-gray-500">Loading orders...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <OrdersError message={error} />;
+  }
 
   return (
     <div>
@@ -232,6 +120,7 @@ const OrdersProduct = () => {
               key={order._id}
               order={order}
               onStatusChange={statusHandler}
+              updating={updatingOrderId === order._id}
             />
           ))}
         </div>
@@ -240,17 +129,21 @@ const OrdersProduct = () => {
   );
 };
 
-const OrderCard = ({ order, onStatusChange }) => {
-  const customerName = [order.address?.firstName, order.address?.lastName]
+const OrderCard = ({ order, onStatusChange, updating }) => {
+  const customerName = [
+    order.shippingAddress?.firstName,
+    order.shippingAddress?.lastName,
+  ]
     .filter(Boolean)
     .join(' ');
 
   const location = [
-    order.address?.street,
-    order.address?.city,
-    order.address?.state,
-    order.address?.country,
-    order.address?.zipcode,
+    order.shippingAddress?.street,
+    order.shippingAddress?.apartment,
+    order.shippingAddress?.city,
+    order.shippingAddress?.county,
+    order.shippingAddress?.country,
+    order.shippingAddress?.postalCode,
   ]
     .filter(Boolean)
     .join(', ');
@@ -279,23 +172,26 @@ const OrderCard = ({ order, onStatusChange }) => {
           </div>
         </div>
 
-        <select
-          value={order.status}
-          onChange={(e) => onStatusChange(e, order._id)}
-          className="h-10 cursor-pointer border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none transition focus:border-gray-500"
-        >
-          <option value="Order Placed">Order Placed</option>
+        <div className="flex items-center gap-3">
+          <OrderStatus status={order.orderStatus} />
 
-          <option value="Packing">Packing</option>
+          <select
+            value={order.orderStatus}
+            onChange={(event) => onStatusChange(event, order._id)}
+            disabled={updating}
+            className="h-10 cursor-pointer border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none transition focus:border-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="PENDING">Order placed</option>
 
-          <option value="Shipped">Shipped</option>
+            <option value="PROCESSING">Processing</option>
 
-          <option value="Out for Delivery">Out for Delivery</option>
+            <option value="SHIPPED">Shipped</option>
 
-          <option value="Delivered">Delivered</option>
+            <option value="DELIVERED">Delivered</option>
 
-          <option value="Cancelled">Cancelled</option>
-        </select>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
       </div>
 
       {/* Order Body */}
@@ -309,7 +205,7 @@ const OrderCard = ({ order, onStatusChange }) => {
           <div className="space-y-4">
             {order.items?.map((item, index) => (
               <div
-                key={`${order._id}-${item._id}-${index}`}
+                key={`${order._id}-${item.product}-${item.size}-${item.color}-${index}`}
                 className="flex justify-between gap-4"
               >
                 <div>
@@ -320,6 +216,7 @@ const OrderCard = ({ order, onStatusChange }) => {
                   <p className="mt-1 text-xs text-gray-400">
                     Qty {item.quantity}
                     {item.size ? ` · Size ${item.size}` : ''}
+                    {item.color ? ` · ${item.color}` : ''}
                   </p>
                 </div>
 
@@ -338,15 +235,27 @@ const OrderCard = ({ order, onStatusChange }) => {
           </p>
 
           <p className="text-sm font-medium text-gray-900">
-            {customerName || 'Customer'}
+            {customerName || order.user?.name || 'Customer'}
           </p>
 
-          <p className="mt-2 text-sm leading-6 text-gray-500">
+          {order.user?.email && (
+            <p className="mt-1 text-xs text-gray-400">{order.user.email}</p>
+          )}
+
+          <p className="mt-3 text-sm leading-6 text-gray-500">
             {location || 'No address provided'}
           </p>
 
-          {order.address?.phone && (
-            <p className="mt-2 text-sm text-gray-500">{order.address.phone}</p>
+          {order.shippingAddress?.phone && (
+            <p className="mt-2 text-sm text-gray-500">
+              {order.shippingAddress.phone}
+            </p>
+          )}
+
+          {order.shippingAddress?.email && (
+            <p className="mt-1 text-sm text-gray-500">
+              {order.shippingAddress.email}
+            </p>
           )}
         </div>
 
@@ -361,19 +270,29 @@ const OrderCard = ({ order, onStatusChange }) => {
               <span className="text-gray-400">Method</span>
 
               <span className="text-right font-medium text-gray-700">
-                {order.paymentMethod}
+                {formatPaymentMethod(order.paymentMethod)}
               </span>
             </div>
 
             <div className="flex justify-between gap-4">
               <span className="text-gray-400">Status</span>
 
-              <span
-                className={`font-medium ${
-                  order.payment ? 'text-green-600' : 'text-amber-600'
-                }`}
-              >
-                {order.payment ? 'Paid' : 'Pending'}
+              <PaymentStatus status={order.paymentStatus} />
+            </div>
+
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-400">Subtotal</span>
+
+              <span className="font-medium text-gray-700">
+                KSh {Number(order.subtotal || 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-400">Delivery</span>
+
+              <span className="font-medium text-gray-700">
+                KSh {Number(order.deliveryFee || 0).toLocaleString()}
               </span>
             </div>
 
@@ -381,13 +300,85 @@ const OrderCard = ({ order, onStatusChange }) => {
               <span className="font-medium text-gray-900">Total</span>
 
               <span className="font-semibold text-gray-950">
-                KSh {Number(order.amount || 0).toLocaleString()}
+                KSh {Number(order.total || 0).toLocaleString()}
               </span>
             </div>
           </div>
         </div>
       </div>
     </article>
+  );
+};
+
+const OrderStatus = ({ status }) => {
+  const statusConfig = {
+    PENDING: {
+      icon: Clock3,
+      label: 'Order placed',
+    },
+
+    PROCESSING: {
+      icon: Package,
+      label: 'Processing',
+    },
+
+    SHIPPED: {
+      icon: Truck,
+      label: 'Shipped',
+    },
+
+    DELIVERED: {
+      icon: CheckCircle2,
+      label: 'Delivered',
+    },
+
+    CANCELLED: {
+      icon: XCircle,
+      label: 'Cancelled',
+    },
+  };
+
+  const config = statusConfig[status] || {
+    icon: Package,
+    label: formatStatus(status),
+  };
+
+  const Icon = config.icon;
+
+  return (
+    <div className="hidden items-center gap-2 text-xs text-gray-500 sm:flex">
+      <Icon size={14} strokeWidth={1.7} />
+
+      <span>{config.label}</span>
+    </div>
+  );
+};
+
+const PaymentStatus = ({ status }) => {
+  const statusConfig = {
+    PAID: {
+      label: 'Paid',
+      className: 'text-green-600',
+    },
+
+    PENDING: {
+      label: 'Pending',
+      className: 'text-amber-600',
+    },
+
+    FAILED: {
+      label: 'Failed',
+      className: 'text-red-600',
+    },
+  };
+
+  const config = statusConfig[status] || {
+    label: formatStatus(status),
+    className: 'text-gray-600',
+  };
+
+  return (
+    <span className={`font-medium ${config.className}`}>{config.label}</span>
   );
 };
 
@@ -405,6 +396,37 @@ const EmptyOrders = () => {
       </p>
     </div>
   );
+};
+
+const OrdersError = ({ message }) => {
+  return (
+    <div className="flex min-h-72 flex-col items-center justify-center border border-gray-200 bg-white px-5 text-center">
+      <div className="flex h-12 w-12 items-center justify-center bg-gray-100">
+        <Package size={20} className="text-gray-500" />
+      </div>
+
+      <h3 className="mt-4 text-sm font-medium text-gray-900">
+        Couldn't load orders
+      </h3>
+
+      <p className="mt-2 max-w-xs text-sm leading-6 text-gray-400">{message}</p>
+    </div>
+  );
+};
+
+const formatPaymentMethod = (method) => {
+  const methods = {
+    MPESA: 'M-Pesa',
+    COD: 'Cash on delivery',
+  };
+
+  return methods[method] || method;
+};
+
+const formatStatus = (status) => {
+  if (!status) return '';
+
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 };
 
 export default OrdersProduct;

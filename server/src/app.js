@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import authRouter from './routes/auth.routes.js';
 import productRouter from './routes/product.routes.js';
+import orderRouter from './routes/order.routes.js';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use(cookieParser());
 // api endpoints
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/products', productRouter);
+app.use('/api/v1/orders', orderRouter);
 
 app.get('/test', (req, res) => {
   return res.status(200).json({

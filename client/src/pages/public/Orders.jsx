@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+
 import {
   ArrowRight,
   CheckCircle2,
@@ -6,54 +8,50 @@ import {
   Package,
   ShoppingBag,
   Truck,
+  XCircle,
 } from 'lucide-react';
-import { products } from '../../data/products';
+
+import { getMyOrders } from '../../services/order.service';
 
 const Orders = () => {
-  // Temporary frontend data.
-  // Replace this with API data later.
-  const orders = [
-    {
-      _id: 'ORD-1001',
-      createdAt: '2026-09-20T10:30:00.000Z',
-      status: 'Processing',
-      paymentMethod: 'M-Pesa',
-      paymentStatus: 'Paid',
-      total: 6300,
-      items: [
-        {
-          ...products[0],
-          quantity: 1,
-          selectedSize: 'M',
-        },
-        {
-          ...products[1],
-          quantity: 1,
-          selectedSize: '42',
-        },
-      ],
-    },
-    {
-      _id: 'ORD-1002',
-      createdAt: '2026-09-14T14:20:00.000Z',
-      status: 'Delivered',
-      paymentMethod: 'Cash on delivery',
-      paymentStatus: 'Paid',
-      total: 3800,
-      items: [
-        {
-          ...products[6],
-          quantity: 1,
-          selectedSize: null,
-        },
-        {
-          ...products[9],
-          quantity: 1,
-          selectedSize: null,
-        },
-      ],
-    },
-  ];
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const data = await getMyOrders();
+
+        if (data.success) {
+          setOrders(data.orders);
+        }
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+
+        setError(error.response?.data?.message || 'Failed to load orders.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="flex min-h-[600px] items-center justify-center">
+        <p className="text-sm text-gray-500">Loading orders...</p>
+      </main>
+    );
+  }
+
+  if (error) {
+    return <OrdersError message={error} />;
+  }
 
   if (orders.length === 0) {
     return <EmptyOrders />;
@@ -92,7 +90,7 @@ const OrderCard = ({ order }) => {
       {/* Order Header */}
       <div className="flex flex-col gap-5 border-b border-gray-200 bg-gray-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:flex sm:items-center sm:gap-10">
-          <OrderInfo label="Order" value={`#${order._id}`} />
+          <OrderInfo label="Order" value={`#${shortOrderId(order._id)}`} />
 
           <OrderInfo label="Date" value={formatDate(order.createdAt)} />
 
@@ -101,49 +99,44 @@ const OrderCard = ({ order }) => {
             value={`KSh ${order.total.toLocaleString()}`}
           />
 
-          <OrderInfo label="Payment" value={order.paymentMethod} />
+          <OrderInfo
+            label="Payment"
+            value={formatPaymentMethod(order.paymentMethod)}
+          />
         </div>
 
-        <OrderStatus status={order.status} />
+        <OrderStatus status={order.orderStatus} />
       </div>
 
       {/* Products */}
       <div className="divide-y divide-gray-100 px-5 sm:px-6">
         {order.items.map((product) => (
           <div
-            key={`${product._id}-${product.selectedSize}`}
+            key={`${product.product}-${product.size}-${product.color}`}
             className="flex gap-4 py-6 sm:gap-6"
           >
             {/* Image */}
-            <Link
-              to={`/product/${product._id}`}
-              className="h-24 w-20 shrink-0 overflow-hidden bg-gray-100 sm:h-28 sm:w-24"
-            >
+            <div className="h-24 w-20 shrink-0 overflow-hidden bg-gray-100 sm:h-28 sm:w-24">
               <img
-                src={product.image?.[0]}
+                src={product.image}
                 alt={product.name}
-                className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                className="h-full w-full object-cover"
               />
-            </Link>
+            </div>
 
             {/* Product Info */}
             <div className="flex min-w-0 flex-1 flex-col justify-between sm:flex-row sm:items-center">
               <div>
-                <p className="mb-1 text-xs text-gray-400">{product.category}</p>
-
-                <Link
-                  to={`/product/${product._id}`}
-                  className="text-sm font-medium text-gray-900 transition hover:text-gray-600 sm:text-base"
-                >
+                <p className="text-sm font-medium text-gray-900 sm:text-base">
                   {product.name}
-                </Link>
+                </p>
 
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                   <span>Qty: {product.quantity}</span>
 
-                  {product.selectedSize && (
-                    <span>Size: {product.selectedSize}</span>
-                  )}
+                  {product.size && <span>Size: {product.size}</span>}
+
+                  {product.color && <span>Color: {product.color}</span>}
                 </div>
               </div>
 
@@ -165,14 +158,7 @@ const OrderCard = ({ order }) => {
 
       {/* Footer */}
       <div className="flex flex-col gap-4 border-t border-gray-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          {order.paymentStatus === 'Paid' && (
-            <>
-              <CheckCircle2 size={15} strokeWidth={1.7} />
-              Payment confirmed
-            </>
-          )}
-        </div>
+        <PaymentStatus status={order.paymentStatus} />
 
         <Link
           to={`/orders/${order._id}`}
@@ -205,25 +191,35 @@ const OrderInfo = ({ label, value }) => {
 
 const OrderStatus = ({ status }) => {
   const statusConfig = {
-    Processing: {
+    PENDING: {
       icon: Clock3,
+      label: 'Order placed',
+    },
+
+    PROCESSING: {
+      icon: Package,
       label: 'Processing',
     },
 
-    Shipped: {
+    SHIPPED: {
       icon: Truck,
       label: 'Shipped',
     },
 
-    Delivered: {
+    DELIVERED: {
       icon: CheckCircle2,
       label: 'Delivered',
+    },
+
+    CANCELLED: {
+      icon: XCircle,
+      label: 'Cancelled',
     },
   };
 
   const config = statusConfig[status] || {
     icon: Package,
-    label: status,
+    label: formatStatus(status),
   };
 
   const Icon = config.icon;
@@ -233,6 +229,33 @@ const OrderStatus = ({ status }) => {
       <Icon size={14} strokeWidth={1.8} className="text-gray-600" />
 
       <span className="text-xs font-medium text-gray-700">{config.label}</span>
+    </div>
+  );
+};
+
+const PaymentStatus = ({ status }) => {
+  if (status === 'PAID') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        <CheckCircle2 size={15} strokeWidth={1.7} />
+        Payment confirmed
+      </div>
+    );
+  }
+
+  if (status === 'FAILED') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        <XCircle size={15} strokeWidth={1.7} />
+        Payment failed
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-gray-500">
+      <Clock3 size={15} strokeWidth={1.7} />
+      Payment pending
     </div>
   );
 };
@@ -264,12 +287,49 @@ const EmptyOrders = () => {
   );
 };
 
+const OrdersError = ({ message }) => {
+  return (
+    <main className="flex min-h-[600px] flex-col items-center justify-center px-4 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+        <Package size={26} strokeWidth={1.5} className="text-gray-500" />
+      </div>
+
+      <h1 className="mt-6 text-xl font-medium text-gray-950">
+        Couldn't load orders
+      </h1>
+
+      <p className="mt-2 max-w-sm text-sm leading-6 text-gray-500">{message}</p>
+    </main>
+  );
+};
+
 const formatDate = (date) => {
   return new Intl.DateTimeFormat('en-KE', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   }).format(new Date(date));
+};
+
+const formatPaymentMethod = (method) => {
+  const methods = {
+    MPESA: 'M-Pesa',
+    COD: 'Cash on delivery',
+  };
+
+  return methods[method] || method;
+};
+
+const formatStatus = (status) => {
+  if (!status) return '';
+
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+};
+
+const shortOrderId = (orderId) => {
+  if (!orderId) return '';
+
+  return orderId.slice(-8).toUpperCase();
 };
 
 export default Orders;

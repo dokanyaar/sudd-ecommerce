@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, ImagePlus, LoaderCircle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { createProductByAdmin } from '../../services/product.service';
 
 const AddProduct = () => {
   const [images, setImages] = useState([null, null, null, null]);
@@ -99,10 +100,13 @@ const AddProduct = () => {
     setInStock(true);
   };
 
+  // handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!images[0]) {
+    const selectedImages = images.filter(Boolean);
+
+    if (selectedImages.length === 0) {
       toast.error('Please upload at least one product image.');
       return;
     }
@@ -125,30 +129,34 @@ const AddProduct = () => {
     setLoading(true);
 
     try {
-      // Temporary product object.
-      // Later this will be sent to the backend.
-      const product = {
-        name: name.trim(),
-        description: description.trim(),
-        price: Number(price),
-        category,
-        subCategory,
-        sizes,
-        colors,
-        bestseller,
-        inStock,
-        images,
-      };
+      const formData = new FormData();
 
-      console.log('New product:', product);
+      formData.append('name', name.trim());
+      formData.append('description', description.trim());
+      formData.append('price', price);
+      formData.append('category', category);
+      formData.append('subCategory', subCategory);
 
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      formData.append('sizes', JSON.stringify(sizes));
+      formData.append('colors', JSON.stringify(colors));
 
-      toast.success('Product added successfully.');
+      formData.append('bestseller', String(bestseller));
+      formData.append('inStock', String(inStock));
 
-      resetForm();
+      selectedImages.forEach((image) => {
+        formData.append('images', image);
+      });
+
+      const data = await createProductByAdmin(formData);
+
+      if (data.success) {
+        toast.success(data.message);
+        resetForm();
+      }
     } catch (error) {
-      toast.error('Failed to add product.');
+      console.error('Failed to create product:', error);
+
+      toast.error(error.response?.data?.message || 'Failed to add product.');
     } finally {
       setLoading(false);
     }
@@ -432,7 +440,7 @@ const ImageUpload = ({ image, index, onChange, onRemove }) => {
 
   return (
     <div>
-      <div className="relative aspect-[4/5] overflow-hidden border border-dashed border-gray-300 bg-gray-50">
+      <div className="relative aspect-4/5 overflow-hidden border border-dashed border-gray-300 bg-gray-50">
         {preview ? (
           <>
             <img

@@ -13,15 +13,18 @@ import {
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
+import useCart from '../../hooks/useCart';
 
 const Navbar = () => {
+  const { cartCount } = useCart();
+
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   const accountRef = useRef(null);
 
-  const cartCount = 0;
+  // const cartCount = 0;
   const wishlistCount = 0;
 
   const navLinks = [

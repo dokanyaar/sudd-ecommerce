@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Package, Plus, Search, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getProductsByAdmin } from '../../services/product.service';
+import {
+  deleteProductByAdmin,
+  getProductsByAdmin,
+} from '../../services/product.service';
 
 const ListProduct = () => {
   const [list, setList] = useState([]);
@@ -20,24 +23,31 @@ const ListProduct = () => {
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
-
-      setList([]);
-      toast.error(error.response?.data?.message || 'Failed to fetch products.');
     } finally {
       setLoading(false);
     }
   };
 
-  const removeProduct = (id) => {
+  const removeProduct = async (id) => {
     const confirmed = window.confirm(
       'Are you sure you want to delete this product?',
     );
 
     if (!confirmed) return;
 
-    setList((prev) => prev.filter((product) => product._id !== id));
+    try {
+      const data = await deleteProductByAdmin(id);
 
-    toast.success('Product removed successfully.');
+      if (data.success) {
+        setList((prev) => prev.filter((product) => product._id !== id));
+
+        toast.success(data.message);
+      }
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+
+      toast.error(error.response?.data?.message || 'Failed to delete product.');
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -120,7 +130,7 @@ const ListProduct = () => {
           <EmptyState searching={Boolean(searchQuery.trim())} />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left">
+            <table className="w-full min-w-190 text-left">
               <thead className="border-b border-gray-200 bg-gray-50">
                 <tr className="text-xs font-medium uppercase tracking-wide text-gray-400">
                   <th className="px-6 py-3">Product</th>

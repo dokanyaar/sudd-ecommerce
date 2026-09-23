@@ -1,110 +1,45 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
-import { products } from '../../data/products';
+
+import useCart from '../../hooks/useCart';
 
 const Cart = () => {
+  const { cartItems, cartCount, cartTotal, removeFromCart, updateQuantity } =
+    useCart();
+
   const navigate = useNavigate();
-
-  // Temporary cart data.
-  // This will come from CartContext/backend later.
-  const [cartItems, setCartItems] = useState([
-    {
-      id: '1',
-      size: 'M',
-      quantity: 1,
-    },
-    {
-      id: '2',
-      size: '42',
-      quantity: 1,
-    },
-    {
-      id: '4',
-      size: null,
-      quantity: 1,
-    },
-  ]);
-
-  const cartProducts = cartItems
-    .map((cartItem) => {
-      const product = products.find((product) => product._id === cartItem.id);
-
-      if (!product) return null;
-
-      return {
-        ...product,
-        selectedSize: cartItem.size,
-        quantity: cartItem.quantity,
-      };
-    })
-    .filter(Boolean);
-
-  const updateQuantity = (id, size, amount) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id && item.size === size
-          ? {
-              ...item,
-              quantity: Math.max(1, item.quantity + amount),
-            }
-          : item,
-      ),
-    );
-  };
-
-  const removeItem = (id, size) => {
-    setCartItems((prev) =>
-      prev.filter((item) => !(item.id === id && item.size === size)),
-    );
-  };
-
-  const subtotal = cartProducts.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0,
-  );
-
-  const delivery = subtotal > 0 ? 300 : 0;
-
-  const total = subtotal + delivery;
 
   return (
     <main className="py-10 sm:py-14">
       {/* Header */}
       <div className="mb-10 border-b border-gray-200 pb-8">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-gray-500">
-          Sudd Shop
-        </p>
-
         <h1 className="text-3xl font-medium tracking-tight text-gray-950 sm:text-4xl">
           Your cart
         </h1>
 
         <p className="mt-3 text-sm text-gray-500">
-          {cartProducts.length === 0
+          {cartItems.length === 0
             ? 'Your cart is currently empty.'
-            : `${cartProducts.length} ${
-                cartProducts.length === 1 ? 'item' : 'items'
-              } in your cart`}
+            : `${cartCount} ${cartCount === 1 ? 'item' : 'items'} in your cart`}
         </p>
       </div>
 
-      {cartProducts.length > 0 ? (
+      {cartItems.length > 0 ? (
         <div className="grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-16">
           {/* Cart Items */}
           <div>
-            {cartProducts.map((product) => (
+            {cartItems.map((product) => (
               <div
-                key={`${product._id}-${product.selectedSize}`}
+                key={`${product.productId}-${product.size}-${product.color}`}
                 className="flex gap-4 border-b border-gray-200 py-6 first:pt-0 sm:gap-6"
               >
                 {/* Image */}
                 <Link
-                  to={`/product/${product._id}`}
+                  to={`/product/${product.slug}`}
                   className="h-32 w-24 shrink-0 overflow-hidden bg-gray-100 sm:h-40 sm:w-32"
                 >
                   <img
-                    src={product.image?.[0]}
+                    src={product.image}
                     alt={product.name}
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                   />
@@ -114,34 +49,46 @@ const Cart = () => {
                 <div className="flex min-w-0 flex-1 flex-col justify-between">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="mb-1 text-xs text-gray-400">
-                        {product.category}
-                      </p>
-
                       <Link
-                        to={`/product/${product._id}`}
+                        to={`/product/${product.slug}`}
                         className="text-sm font-medium text-gray-900 transition hover:text-gray-600 sm:text-base"
                       >
                         {product.name}
                       </Link>
 
-                      {product.selectedSize && (
-                        <p className="mt-2 text-xs text-gray-500">
-                          Size:{' '}
-                          <span className="font-medium text-gray-700">
-                            {product.selectedSize}
-                          </span>
-                        </p>
-                      )}
+                      {/* Variant */}
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                        {product.size && (
+                          <p>
+                            Size:{' '}
+                            <span className="font-medium text-gray-700">
+                              {product.size}
+                            </span>
+                          </p>
+                        )}
+
+                        {product.color && (
+                          <p>
+                            Color:{' '}
+                            <span className="font-medium text-gray-700">
+                              {product.color}
+                            </span>
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Delete */}
                     <button
                       type="button"
                       onClick={() =>
-                        removeItem(product._id, product.selectedSize)
+                        removeFromCart(
+                          product.productId,
+                          product.size,
+                          product.color,
+                        )
                       }
-                      className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-black"
+                      className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-red-500"
                       aria-label={`Remove ${product.name}`}
                     >
                       <Trash2 size={17} strokeWidth={1.7} />
@@ -155,7 +102,12 @@ const Cart = () => {
                       <button
                         type="button"
                         onClick={() =>
-                          updateQuantity(product._id, product.selectedSize, -1)
+                          updateQuantity(
+                            product.productId,
+                            product.size,
+                            product.color,
+                            product.quantity - 1,
+                          )
                         }
                         disabled={product.quantity <= 1}
                         className="flex h-full w-9 cursor-pointer items-center justify-center text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30"
@@ -171,7 +123,12 @@ const Cart = () => {
                       <button
                         type="button"
                         onClick={() =>
-                          updateQuantity(product._id, product.selectedSize, 1)
+                          updateQuantity(
+                            product.productId,
+                            product.size,
+                            product.color,
+                            product.quantity + 1,
+                          )
                         }
                         className="flex h-full w-9 cursor-pointer items-center justify-center text-gray-600 transition hover:bg-gray-50"
                         aria-label="Increase quantity"
@@ -219,36 +176,41 @@ const Cart = () => {
               </h2>
 
               <div className="mt-6 space-y-4">
+                {/* Subtotal */}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>
 
                   <span className="font-medium text-gray-900">
-                    KSh {subtotal.toLocaleString()}
+                    KSh {cartTotal.toLocaleString()}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
+                {/* Delivery */}
+                <div className="flex items-center justify-between gap-4 text-sm">
                   <span className="text-gray-500">Delivery</span>
 
-                  <span className="font-medium text-gray-900">
-                    KSh {delivery.toLocaleString()}
+                  <span className="text-right text-gray-500">
+                    Calculated at checkout
                   </span>
                 </div>
               </div>
 
               <div className="my-6 border-t border-gray-200" />
 
+              {/* Total */}
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-950">Total</span>
+                <div>
+                  <span className="font-medium text-gray-950">Total</span>
+
+                  <p className="mt-1 text-xs text-gray-400">
+                    Excluding delivery
+                  </p>
+                </div>
 
                 <span className="text-lg font-semibold text-gray-950">
-                  KSh {total.toLocaleString()}
+                  KSh {cartTotal.toLocaleString()}
                 </span>
               </div>
-
-              <p className="mt-2 text-xs text-gray-400">
-                Delivery fees are included in the total.
-              </p>
 
               <button
                 type="button"

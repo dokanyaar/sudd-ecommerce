@@ -8,12 +8,17 @@ import {
   Smartphone,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { products } from '../../data/products';
+
+import useCart from '../../hooks/useCart';
+import { createOrder } from '../../services/order.service';
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
 
+  const { cartItems, cartCount, cartTotal, clearCart } = useCart();
+
   const [paymentMethod, setPaymentMethod] = useState('mpesa');
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -28,42 +33,9 @@ const PlaceOrder = () => {
     country: 'Kenya',
   });
 
-  // Temporary cart data.
-  // This will come from CartContext/backend later.
-  const cartItems = [
-    {
-      id: '1',
-      size: 'M',
-      quantity: 1,
-    },
-    {
-      id: '2',
-      size: '42',
-      quantity: 1,
-    },
-  ];
-
-  const orderProducts = cartItems
-    .map((cartItem) => {
-      const product = products.find((product) => product._id === cartItem.id);
-
-      if (!product) return null;
-
-      return {
-        ...product,
-        selectedSize: cartItem.size,
-        quantity: cartItem.quantity,
-      };
-    })
-    .filter(Boolean);
-
-  const subtotal = orderProducts.reduce(
-    (total, product) => total + product.price * product.quantity,
-    0,
-  );
-
   const deliveryFee = 300;
-  const total = subtotal + deliveryFee;
+
+  const total = cartTotal + deliveryFee;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,24 +46,86 @@ const PlaceOrder = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Temporary frontend behavior.
-    // API/M-Pesa logic will be connected later.
-    toast.success('Order placed successfully.');
+    if (cartItems.length === 0) {
+      toast.error('Your cart is empty.');
+      navigate('/cart');
+      return;
+    }
 
-    navigate('/orders');
+    try {
+      setLoading(true);
+
+      const orderData = {
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          size: item.size,
+          color: item.color,
+          quantity: item.quantity,
+        })),
+
+        shippingAddress: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          street: formData.street,
+          apartment: formData.apartment,
+          city: formData.city,
+          county: formData.county,
+          postalCode: formData.postalCode,
+          country: formData.country,
+        },
+
+        paymentMethod: paymentMethod.toUpperCase(),
+      };
+
+      const data = await createOrder(orderData);
+
+      if (data.success) {
+        clearCart();
+
+        toast.success(data.message);
+
+        navigate(`/orders/${data.order._id}`);
+      }
+    } catch (error) {
+      console.error('Failed to create order:', error);
+
+      toast.error(error.response?.data?.message || 'Failed to place order.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (cartItems.length === 0) {
+    return (
+      <main className="flex min-h-[500px] flex-col items-center justify-center py-20 text-center">
+        <h1 className="text-2xl font-medium text-gray-950">
+          Your cart is empty
+        </h1>
+
+        <p className="mt-2 text-sm text-gray-500">
+          Add some products before proceeding to checkout.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => navigate('/collection')}
+          className="mt-6 bg-black px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-800"
+        >
+          Continue shopping
+        </button>
+      </main>
+    );
+  }
 
   return (
     <main className="py-10 sm:py-14">
       {/* Header */}
       <div className="mb-10 border-b border-gray-200 pb-8">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-gray-500">
-          Checkout
-        </p>
-
         <h1 className="text-3xl font-medium tracking-tight text-gray-950 sm:text-4xl">
           Complete your order
         </h1>
@@ -287,18 +321,26 @@ const PlaceOrder = () => {
         {/* Order Summary */}
         <aside className="lg:sticky lg:top-24">
           <div className="bg-gray-50 p-6 sm:p-7">
-            <h2 className="text-lg font-medium text-gray-950">Order summary</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-950">
+                Order summary
+              </h2>
+
+              <span className="text-xs text-gray-400">
+                {cartCount} {cartCount === 1 ? 'item' : 'items'}
+              </span>
+            </div>
 
             {/* Products */}
             <div className="mt-6 space-y-5">
-              {orderProducts.map((product) => (
+              {cartItems.map((product) => (
                 <div
-                  key={`${product._id}-${product.selectedSize}`}
+                  key={`${product.productId}-${product.size}-${product.color}`}
                   className="flex gap-4"
                 >
                   <div className="relative h-20 w-16 shrink-0 overflow-hidden bg-gray-200">
                     <img
-                      src={product.image?.[0]}
+                      src={product.image}
                       alt={product.name}
                       className="h-full w-full object-cover"
                     />
@@ -314,11 +356,11 @@ const PlaceOrder = () => {
                         {product.name}
                       </p>
 
-                      {product.selectedSize && (
-                        <p className="mt-1 text-xs text-gray-400">
-                          Size: {product.selectedSize}
-                        </p>
-                      )}
+                      <div className="mt-1 space-y-1 text-xs text-gray-400">
+                        {product.size && <p>Size: {product.size}</p>}
+
+                        {product.color && <p>Color: {product.color}</p>}
+                      </div>
                     </div>
 
                     <p className="shrink-0 text-sm font-medium text-gray-800">
@@ -335,7 +377,7 @@ const PlaceOrder = () => {
                 <span className="text-gray-500">Subtotal</span>
 
                 <span className="font-medium text-gray-800">
-                  KSh {subtotal.toLocaleString()}
+                  KSh {cartTotal.toLocaleString()}
                 </span>
               </div>
 
@@ -361,14 +403,21 @@ const PlaceOrder = () => {
             {/* Submit */}
             <button
               type="submit"
-              className="group mt-7 flex w-full cursor-pointer items-center justify-center gap-3 bg-black px-6 py-4 text-sm font-medium text-white transition hover:bg-gray-800"
+              disabled={loading}
+              className="group mt-7 flex w-full cursor-pointer items-center justify-center gap-3 bg-black px-6 py-4 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {paymentMethod === 'mpesa' ? 'Pay with M-Pesa' : 'Place order'}
+              {loading
+                ? 'Processing...'
+                : paymentMethod === 'mpesa'
+                  ? 'Pay with M-Pesa'
+                  : 'Place order'}
 
-              <ArrowRight
-                size={16}
-                className="transition-transform group-hover:translate-x-1"
-              />
+              {!loading && (
+                <ArrowRight
+                  size={16}
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              )}
             </button>
 
             <div className="mt-5 flex items-center justify-center gap-2 text-xs text-gray-400">
@@ -396,6 +445,7 @@ const Input = ({
     <label className="block">
       <span className="mb-2 block text-xs font-medium text-gray-600">
         {label}
+
         {required && <span className="ml-1 text-gray-400">*</span>}
       </span>
 

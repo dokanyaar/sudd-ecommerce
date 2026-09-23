@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+
 import {
   ArrowLeft,
   Check,
@@ -8,88 +10,50 @@ import {
   MapPin,
   Package,
   Truck,
+  XCircle,
 } from 'lucide-react';
-import { products } from '../../data/products';
+
+import { getOrderById } from '../../services/order.service';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
 
-  // Temporary frontend data.
-  // Replace with API data later.
-  const orders = [
-    {
-      _id: 'ORD-1001',
-      createdAt: '2026-09-20T10:30:00.000Z',
-      status: 'Processing',
-      paymentMethod: 'M-Pesa',
-      paymentStatus: 'Paid',
-      subtotal: 6000,
-      deliveryFee: 300,
-      total: 6300,
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-      address: {
-        firstName: 'John',
-        lastName: 'Agata',
-        phone: '0712 345 678',
-        email: 'john@example.com',
-        street: 'West Road',
-        city: 'Nairobi',
-        county: 'Nairobi',
-        country: 'Kenya',
-      },
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-      items: [
-        {
-          ...products[0],
-          quantity: 1,
-          selectedSize: 'M',
-        },
-        {
-          ...products[1],
-          quantity: 1,
-          selectedSize: '42',
-        },
-      ],
-    },
-    {
-      _id: 'ORD-1002',
-      createdAt: '2026-09-14T14:20:00.000Z',
-      status: 'Delivered',
-      paymentMethod: 'Cash on delivery',
-      paymentStatus: 'Paid',
-      subtotal: 4000,
-      deliveryFee: 300,
-      total: 4300,
+        const data = await getOrderById(orderId);
 
-      address: {
-        firstName: 'John',
-        lastName: 'Agata',
-        phone: '0712 345 678',
-        email: 'john@example.com',
-        street: 'West Road',
-        city: 'Nairobi',
-        county: 'Nairobi',
-        country: 'Kenya',
-      },
+        if (data.success) {
+          setOrder(data.order);
+        }
+      } catch (error) {
+        console.error('Failed to fetch order:', error);
 
-      items: [
-        {
-          ...products[6],
-          quantity: 1,
-          selectedSize: null,
-        },
-        {
-          ...products[9],
-          quantity: 1,
-          selectedSize: null,
-        },
-      ],
-    },
-  ];
+        setError(error.response?.data?.message || 'Failed to load order.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const order = orders.find((order) => order._id === orderId);
+    fetchOrder();
+  }, [orderId]);
 
-  if (!order) {
+  if (loading) {
+    return (
+      <main className="flex min-h-[600px] items-center justify-center">
+        <p className="text-sm text-gray-500">Loading order...</p>
+      </main>
+    );
+  }
+
+  if (error || !order) {
     return <OrderNotFound />;
   }
 
@@ -114,7 +78,7 @@ const OrderDetails = () => {
             Order details
           </p>
 
-          <h1 className="text-3xl font-medium tracking-tight text-gray-950 sm:text-4xl">
+          <h1 className="text-2xl font-medium tracking-tight text-gray-950 sm:text-3xl">
             #{order._id}
           </h1>
 
@@ -123,7 +87,7 @@ const OrderDetails = () => {
           </p>
         </div>
 
-        <OrderStatus status={order.status} />
+        <OrderStatus status={order.orderStatus} />
       </div>
 
       {/* Tracking */}
@@ -136,7 +100,23 @@ const OrderDetails = () => {
           </p>
         </div>
 
-        <OrderTracker status={order.status} />
+        {order.orderStatus === 'CANCELLED' ? (
+          <div className="flex items-center gap-3 border border-gray-200 p-4">
+            <XCircle size={20} strokeWidth={1.7} className="text-gray-600" />
+
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                Order cancelled
+              </p>
+
+              <p className="mt-1 text-xs text-gray-500">
+                This order has been cancelled.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <OrderTracker status={order.orderStatus} />
+        )}
       </section>
 
       <div className="grid gap-12 py-10 lg:grid-cols-[1fr_360px] lg:gap-16">
@@ -149,39 +129,29 @@ const OrderDetails = () => {
             <div className="divide-y divide-gray-100 border-y border-gray-200">
               {order.items.map((product) => (
                 <div
-                  key={`${product._id}-${product.selectedSize}`}
+                  key={`${product.product}-${product.size}-${product.color}`}
                   className="flex gap-4 py-6 sm:gap-6"
                 >
-                  <Link
-                    to={`/product/${product._id}`}
-                    className="h-28 w-22 shrink-0 overflow-hidden bg-gray-100 sm:h-32 sm:w-26"
-                  >
+                  <div className="h-28 w-22 shrink-0 overflow-hidden bg-gray-100 sm:h-32 sm:w-26">
                     <img
-                      src={product.image?.[0]}
+                      src={product.image}
                       alt={product.name}
-                      className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                      className="h-full w-full object-cover"
                     />
-                  </Link>
+                  </div>
 
                   <div className="flex min-w-0 flex-1 flex-col justify-between sm:flex-row sm:items-center">
                     <div>
-                      <p className="mb-1 text-xs text-gray-400">
-                        {product.category}
-                      </p>
-
-                      <Link
-                        to={`/product/${product._id}`}
-                        className="text-sm font-medium text-gray-900 transition hover:text-gray-600 sm:text-base"
-                      >
+                      <p className="text-sm font-medium text-gray-900 sm:text-base">
                         {product.name}
-                      </Link>
+                      </p>
 
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                         <span>Quantity: {product.quantity}</span>
 
-                        {product.selectedSize && (
-                          <span>Size: {product.selectedSize}</span>
-                        )}
+                        {product.size && <span>Size: {product.size}</span>}
+
+                        {product.color && <span>Color: {product.color}</span>}
                       </div>
                     </div>
 
@@ -215,22 +185,32 @@ const OrderDetails = () => {
 
             <div className="border border-gray-200 p-5 sm:p-6">
               <p className="text-sm font-medium text-gray-900">
-                {order.address.firstName} {order.address.lastName}
+                {order.shippingAddress.firstName}{' '}
+                {order.shippingAddress.lastName}
               </p>
 
               <div className="mt-3 space-y-1 text-sm leading-6 text-gray-500">
-                <p>{order.address.street}</p>
+                <p>{order.shippingAddress.street}</p>
+
+                {order.shippingAddress.apartment && (
+                  <p>{order.shippingAddress.apartment}</p>
+                )}
 
                 <p>
-                  {order.address.city}, {order.address.county}
+                  {order.shippingAddress.city}, {order.shippingAddress.county}
                 </p>
 
-                <p>{order.address.country}</p>
+                {order.shippingAddress.postalCode && (
+                  <p>{order.shippingAddress.postalCode}</p>
+                )}
+
+                <p>{order.shippingAddress.country}</p>
               </div>
 
               <div className="mt-5 border-t border-gray-100 pt-4 text-sm text-gray-500">
-                <p>{order.address.phone}</p>
-                <p className="mt-1">{order.address.email}</p>
+                <p>{order.shippingAddress.phone}</p>
+
+                <p className="mt-1">{order.shippingAddress.email}</p>
               </div>
             </div>
           </section>
@@ -274,17 +254,20 @@ const OrderDetails = () => {
             </div>
 
             <div className="mt-5 space-y-4">
-              <SummaryRow label="Method" value={order.paymentMethod} />
+              <SummaryRow
+                label="Method"
+                value={formatPaymentMethod(order.paymentMethod)}
+              />
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Status</span>
 
                 <span className="flex items-center gap-1.5 font-medium text-gray-800">
-                  {order.paymentStatus === 'Paid' && (
+                  {order.paymentStatus === 'PAID' && (
                     <CheckCircle2 size={14} strokeWidth={1.8} />
                   )}
 
-                  {order.paymentStatus}
+                  {formatStatus(order.paymentStatus)}
                 </span>
               </div>
             </div>
@@ -315,34 +298,43 @@ const OrderDetails = () => {
 const OrderTracker = ({ status }) => {
   const steps = [
     {
-      name: 'Processing',
+      value: 'PENDING',
+      name: 'Order placed',
       icon: Clock3,
     },
     {
+      value: 'PROCESSING',
+      name: 'Processing',
+      icon: Package,
+    },
+    {
+      value: 'SHIPPED',
       name: 'Shipped',
       icon: Truck,
     },
     {
+      value: 'DELIVERED',
       name: 'Delivered',
       icon: CheckCircle2,
     },
   ];
 
-  const currentStep = steps.findIndex((step) => step.name === status);
+  const currentStep = steps.findIndex((step) => step.value === status);
 
   return (
     <div className="relative">
       {/* Desktop line */}
       <div className="absolute left-0 right-0 top-5 hidden h-px bg-gray-200 sm:block" />
 
-      <div className="relative grid gap-6 sm:grid-cols-3 sm:gap-0">
+      <div className="relative grid gap-6 sm:grid-cols-4 sm:gap-0">
         {steps.map((step, index) => {
           const Icon = step.icon;
-          const completed = index <= currentStep;
+
+          const completed = currentStep !== -1 && index <= currentStep;
 
           return (
             <div
-              key={step.name}
+              key={step.value}
               className="flex items-center gap-4 sm:flex-col sm:gap-3 sm:text-center"
             >
               <div
@@ -382,9 +374,11 @@ const OrderTracker = ({ status }) => {
 
 const OrderStatus = ({ status }) => {
   const statusConfig = {
-    Processing: Clock3,
-    Shipped: Truck,
-    Delivered: CheckCircle2,
+    PENDING: Clock3,
+    PROCESSING: Package,
+    SHIPPED: Truck,
+    DELIVERED: CheckCircle2,
+    CANCELLED: XCircle,
   };
 
   const Icon = statusConfig[status] || Package;
@@ -393,7 +387,9 @@ const OrderStatus = ({ status }) => {
     <div className="flex w-fit items-center gap-2 border border-gray-200 px-3 py-2">
       <Icon size={15} strokeWidth={1.7} />
 
-      <span className="text-xs font-medium text-gray-700">{status}</span>
+      <span className="text-xs font-medium text-gray-700">
+        {formatStatus(status)}
+      </span>
     </div>
   );
 };
@@ -440,6 +436,21 @@ const formatDate = (date) => {
     month: 'long',
     year: 'numeric',
   }).format(new Date(date));
+};
+
+const formatPaymentMethod = (method) => {
+  const methods = {
+    MPESA: 'M-Pesa',
+    COD: 'Cash on delivery',
+  };
+
+  return methods[method] || method;
+};
+
+const formatStatus = (status) => {
+  if (!status) return '';
+
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 };
 
 export default OrderDetails;
