@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { createProduct } from '../controllers/product.controller.js';
+import {
+  createProduct,
+  getProductBySlug,
+  getProducts,
+} from '../controllers/product.controller.js';
 import upload from '../middlewares/multer.middleware.js';
 import { protect, restrictTo } from '../middlewares/auth.middleware.js';
 
@@ -12,5 +16,8 @@ productRouter.post(
   upload.array('images', 4),
   createProduct,
 );
+
+productRouter.get('/', getProducts);
+productRouter.get('/:slug', getProductBySlug);
 
 export default productRouter;

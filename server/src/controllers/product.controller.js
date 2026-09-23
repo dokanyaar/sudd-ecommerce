@@ -2,6 +2,7 @@ import { toFile } from '@imagekit/nodejs';
 
 import imagekit from '../config/imagekit.js';
 import Product from '../models/product.model.js';
+import { generateUniqueProductSlug } from '../utils/generateSlug.js';
 
 // create product
 export const createProduct = async (req, res) => {
@@ -33,6 +34,8 @@ export const createProduct = async (req, res) => {
         message: 'Missing required fields.',
       });
     }
+
+    const slug = await generateUniqueProductSlug(name);
 
     // validate images
     if (!req.files || req.files.length === 0) {
@@ -68,6 +71,7 @@ export const createProduct = async (req, res) => {
     // create product
     const product = await Product.create({
       name: name.trim(),
+      slug,
       description: description.trim(),
       price: Number(price),
       category,
@@ -99,6 +103,62 @@ export const createProduct = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to create product.',
+    });
+  }
+};
+
+// get all products
+export const getProducts = async (req, res) => {
+  try {
+    const products = await Product.find({}).sort({
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      products,
+    });
+  } catch (error) {
+    console.error('Get products error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch products.',
+    });
+  }
+};
+
+// get product by slug
+export const getProductBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product slug is required.',
+      });
+    }
+
+    const product = await Product.findOne({ slug });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found.',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    console.error('Get product by slug error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch product.',
     });
   }
 };
