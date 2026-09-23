@@ -11,13 +11,23 @@ export const generateSlug = (value) => {
 };
 
 // generate unique product slug
-export const generateUniqueProductSlug = async (name) => {
+export const generateUniqueProductSlug = async (
+  name,
+  excludeProductId = null,
+) => {
   const baseSlug = generateSlug(name);
 
   let slug = baseSlug;
   let counter = 2;
 
-  while (await Product.exists({ slug })) {
+  while (
+    await Product.exists({
+      slug,
+      ...(excludeProductId && {
+        _id: { $ne: excludeProductId },
+      }),
+    })
+  ) {
     slug = `${baseSlug}-${counter}`;
     counter++;
   }

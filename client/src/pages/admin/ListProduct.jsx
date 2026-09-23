@@ -1,124 +1,32 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Package, Plus, Search, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-
-const staticProducts = [
-  {
-    _id: '1',
-    name: 'Essential Cotton T-Shirt',
-    category: 'Men',
-    subCategory: 'T-Shirts',
-    price: 1800,
-    bestseller: true,
-    image: [
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '2',
-    name: 'Classic White Sneakers',
-    category: 'Shoes',
-    subCategory: 'Sneakers',
-    price: 4200,
-    bestseller: true,
-    image: [
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '3',
-    name: 'Everyday Hoodie',
-    category: 'Men',
-    subCategory: 'Hoodies',
-    price: 3200,
-    bestseller: false,
-    image: [
-      'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '4',
-    name: 'Minimal Backpack',
-    category: 'Accessories',
-    subCategory: 'Bags',
-    price: 3500,
-    bestseller: true,
-    image: [
-      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '5',
-    name: 'Classic Denim Jacket',
-    category: 'Women',
-    subCategory: 'Jackets',
-    price: 3900,
-    bestseller: false,
-    image: [
-      'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '6',
-    name: 'Casual Leather Sneakers',
-    category: 'Shoes',
-    subCategory: 'Sneakers',
-    price: 4500,
-    bestseller: false,
-    image: [
-      'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '7',
-    name: 'Classic Sunglasses',
-    category: 'Accessories',
-    subCategory: 'Sunglasses',
-    price: 1800,
-    bestseller: true,
-    image: [
-      'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '8',
-    name: 'Minimal Wrist Watch',
-    category: 'Accessories',
-    subCategory: 'Watches',
-    price: 5500,
-    bestseller: true,
-    image: [
-      'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '9',
-    name: 'Relaxed Summer Shirt',
-    category: 'Men',
-    subCategory: 'Shirts',
-    price: 2600,
-    bestseller: false,
-    image: [
-      'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-  {
-    _id: '10',
-    name: 'Everyday Tote Bag',
-    category: 'Accessories',
-    subCategory: 'Bags',
-    price: 2200,
-    bestseller: false,
-    image: [
-      'https://images.unsplash.com/photo-1594223274512-ad4803739b7c?auto=format&fit=crop&w=500&q=80',
-    ],
-  },
-];
+import { getProductsByAdmin } from '../../services/product.service';
 
 const ListProduct = () => {
-  const [list, setList] = useState(staticProducts);
+  const [list, setList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const getProducts = async () => {
+    setLoading(true);
+
+    try {
+      const data = await getProductsByAdmin();
+
+      if (data.success) {
+        setList(data.products || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+
+      setList([]);
+      toast.error(error.response?.data?.message || 'Failed to fetch products.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const removeProduct = (id) => {
     const confirmed = window.confirm(
@@ -145,6 +53,14 @@ const ListProduct = () => {
         .includes(query),
     );
   }, [list, searchQuery]);
+
+  useEffect(() => {
+    getProducts();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div>
@@ -229,9 +145,9 @@ const ListProduct = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="h-14 w-12 shrink-0 overflow-hidden bg-gray-100">
-                          {product.image?.[0] ? (
+                          {product.images?.[0]?.url ? (
                             <img
-                              src={product.image[0]}
+                              src={product.images[0].url}
                               alt={product.name}
                               className="h-full w-full object-cover"
                             />
