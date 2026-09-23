@@ -2,11 +2,38 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import ProductItem from './ProductItem';
 import { products } from '../../data/products';
+import { getProducts } from '../../services/product.service';
+import { useEffect, useState } from 'react';
 
 const BestSeller = () => {
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+
+    try {
+      const data = await getProducts();
+
+      setProducts(data.products);
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   const bestSellers = products
     .filter((product) => product.bestseller)
     .slice(0, 4);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <section className="py-16 sm:py-20">
@@ -43,14 +70,7 @@ const BestSeller = () => {
       {/* Products */}
       <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4">
         {bestSellers.map((product) => (
-          <ProductItem
-            key={product._id}
-            id={product._id}
-            image={product.image}
-            name={product.name}
-            price={product.price}
-            category={product.category}
-          />
+          <ProductItem key={product._id} product={product} />
         ))}
       </div>
 

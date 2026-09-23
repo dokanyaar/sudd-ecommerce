@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
 
 import ProductItem from '../../components/public/ProductItem';
-import { products } from '../../data/products';
+import { getProducts } from '../../services/product.service';
 
 const Collection = () => {
   const [showFilters, setShowFilters] = useState(false);
@@ -25,6 +25,27 @@ const Collection = () => {
     'Watches',
     'Sunglasses',
   ];
+
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+
+    try {
+      const data = await getProducts();
+
+      if (data.success) {
+        setProducts(data.products || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleCategory = (value) => {
     setCategories((prev) =>
@@ -101,11 +122,19 @@ const Collection = () => {
     }
 
     return result;
-  }, [searchQuery, categories, subCategories, sortType]);
+  }, [products, searchQuery, categories, subCategories, sortType]);
 
   const activeFilterCount = categories.length + subCategories.length;
 
   const hasActiveFilters = activeFilterCount > 0 || searchQuery.trim();
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <main className="py-10 sm:py-14">
@@ -289,14 +318,7 @@ const Collection = () => {
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 xl:grid-cols-4">
               {filteredProducts.map((product) => (
-                <ProductItem
-                  key={product._id}
-                  id={product._id}
-                  image={product.image}
-                  name={product.name}
-                  price={product.price}
-                  category={product.category}
-                />
+                <ProductItem key={product._id} product={product} />
               ))}
             </div>
           ) : (
@@ -339,12 +361,12 @@ const Collection = () => {
 
       {/* Mobile Filter Drawer */}
       <aside
-        className={`fixed bottom-0 left-0 top-0 z-[70] w-[88%] max-w-sm overflow-y-auto bg-white transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed bottom-0 left-0 top-0 z-70 w-[88%] max-w-sm overflow-y-auto bg-white transition-transform duration-300 ease-in-out lg:hidden ${
           showFilters ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Drawer Header */}
-        <div className="sticky top-0 z-10 flex h-[72px] items-center justify-between border-b border-gray-100 bg-white px-5">
+        <div className="sticky top-0 z-10 flex h-18 items-center justify-between border-b border-gray-100 bg-white px-5">
           <div className="flex items-center gap-2">
             <h2 className="font-medium text-gray-950">Filters</h2>
 

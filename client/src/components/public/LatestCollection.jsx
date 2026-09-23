@@ -2,10 +2,34 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 import ProductItem from './ProductItem';
-import { products } from '../../data/products';
+import { useEffect, useState } from 'react';
+import { getProducts } from '../../services/product.service';
 
 const LatestCollection = () => {
-  const latestProducts = products.slice(0, 8);
+  const [loading, setLoading] = useState(true);
+  const [latestProducts, setLatestProducts] = useState([]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+
+    try {
+      const data = await getProducts();
+
+      setLatestProducts(data.products);
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <section className="py-16 sm:py-20">
@@ -41,15 +65,8 @@ const LatestCollection = () => {
 
       {/* Products */}
       <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4">
-        {latestProducts.map((product) => (
-          <ProductItem
-            key={product._id}
-            id={product._id}
-            image={product.image}
-            name={product.name}
-            price={product.price}
-            category={product.category}
-          />
+        {latestProducts.slice(0, 8).map((product) => (
+          <ProductItem key={product._id} product={product} />
         ))}
       </div>
 

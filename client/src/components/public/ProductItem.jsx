@@ -1,13 +1,17 @@
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 
-const ProductItem = ({ id, image, name, price, category }) => {
+const ProductItem = ({ product }) => {
+  const { slug, images, name, price, category } = product;
+
+  const productImage = images?.[0]?.url;
+
   return (
-    <Link to={`/product/${id}`} className="group block">
+    <Link to={`/product/${slug}`} className="group block">
       {/* Product Image */}
       <div className="relative aspect-4/5 overflow-hidden bg-gray-100">
         <img
-          src={image?.[0]}
+          src={productImage}
           alt={name}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
@@ -36,7 +40,7 @@ const ProductItem = ({ id, image, name, price, category }) => {
           </h3>
 
           <p className="shrink-0 text-sm font-medium text-gray-950">
-            KSh {price.toLocaleString()}
+            KSh {price?.toLocaleString()}
           </p>
         </div>
       </div>

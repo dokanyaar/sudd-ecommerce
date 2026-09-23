@@ -13,25 +13,46 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { products } from '../../data/products';
 import RelatedProducts from '../../components/public/RelatedProducts';
+import { getProductBySlug } from '../../services/product.service';
 
 const Product = () => {
-  const { productId } = useParams();
+  const { slug } = useParams();
 
-  const productData = products.find((product) => product._id === productId);
+  const [productData, setProductData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [selectedImage, setSelectedImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
 
-  useEffect(() => {
-    if (!productData) return;
+  const fetchProduct = async () => {
+    setLoading(true);
+    setError('');
 
-    setSelectedImage(productData.image?.[0] || '');
-    setSelectedSize('');
-    setSelectedColor('');
-  }, [productId]);
+    try {
+      const data = await getProductBySlug(slug);
+
+      if (data.success) {
+        setProductData(data.product);
+        setSelectedImage(data.product.images?.[0]?.url || '');
+        setSelectedSize('');
+        setSelectedColor('');
+      }
+    } catch (error) {
+      console.error('Failed to fetch product:', error);
+
+      setProductData(null);
+      setError(error.response?.data?.message || 'Failed to fetch product.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProduct();
+  }, [slug]);
 
   const handleAddToCart = () => {
     if (productData.sizes?.length > 0 && !selectedSize) {
@@ -41,6 +62,14 @@ const Product = () => {
 
     toast.success(`${productData.name} added to cart.`);
   };
+
+  if (loading) {
+    return (
+      <main className="flex min-h-125 items-center justify-center">
+        <p className="text-sm text-gray-500">Loading product...</p>
+      </main>
+    );
+  }
 
   if (!productData) {
     return (
@@ -52,7 +81,7 @@ const Product = () => {
         </h1>
 
         <p className="mt-2 text-sm text-gray-500">
-          This product may no longer be available.
+          {error || 'This product may no longer be available.'}
         </p>
 
         <Link
@@ -90,22 +119,22 @@ const Product = () => {
         {/* Gallery */}
         <div className="flex flex-col-reverse gap-3 sm:flex-row">
           {/* Thumbnails */}
-          {productData.image?.length > 1 && (
+          {productData.images?.length > 1 && (
             <div className="flex w-full justify-between gap-2 overflow-x-auto sm:w-[18.7%] sm:flex-col sm:justify-start sm:overflow-y-auto">
-              {productData.image.map((image, index) => (
+              {productData.images.map((image, index) => (
                 <button
                   type="button"
-                  key={`${productData._id}-${index}`}
-                  onClick={() => setSelectedImage(image)}
+                  key={image.fileId}
+                  onClick={() => setSelectedImage(image.url)}
                   className={`w-[24%] shrink-0 cursor-pointer overflow-hidden border transition sm:w-full ${
-                    selectedImage === image
+                    selectedImage === image.url
                       ? 'border-black'
                       : 'border-transparent hover:border-gray-300'
                   }`}
                   aria-label={`View ${productData.name} image ${index + 1}`}
                 >
                   <img
-                    src={image}
+                    src={image.url}
                     alt={`${productData.name} view ${index + 1}`}
                     className="h-auto w-full object-cover"
                   />
@@ -117,11 +146,11 @@ const Product = () => {
           {/* Main Image */}
           <div
             className={`relative ${
-              productData.image?.length > 1 ? 'w-full sm:w-[80%]' : 'w-full'
+              productData.images?.length > 1 ? 'w-full sm:w-[80%]' : 'w-full'
             }`}
           >
             <img
-              src={selectedImage || productData.image?.[0]}
+              src={selectedImage || productData.images?.[0]?.url}
               alt={productData.name}
               className="h-auto w-full object-cover"
             />
@@ -350,11 +379,7 @@ const Product = () => {
       </section>
 
       {/* Related Products */}
-      <RelatedProducts
-        category={productData.category}
-        subCategory={productData.subCategory}
-        currentProductId={productData._id}
-      />
+      <RelatedProducts product={productData} />
     </main>
   );
 };

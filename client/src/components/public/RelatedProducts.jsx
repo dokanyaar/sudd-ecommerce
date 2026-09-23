@@ -1,26 +1,63 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 import ProductItem from './ProductItem';
-import { products } from '../../data/products';
+import { getProducts } from '../../services/product.service';
 
-const RelatedProducts = ({ category, subCategory, currentProductId }) => {
-  // Products from the same subcategory
-  const sameSubCategory = products.filter(
-    (product) =>
-      product._id !== currentProductId && product.subCategory === subCategory,
-  );
+const RelatedProducts = ({ product }) => {
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Other products from the same category
-  const sameCategory = products.filter(
-    (product) =>
-      product._id !== currentProductId &&
-      product.category === category &&
-      product.subCategory !== subCategory,
-  );
+  const fetchRelatedProducts = async () => {
+    setLoading(true);
 
-  // Prioritize the closest matches
-  const relatedProducts = [...sameSubCategory, ...sameCategory].slice(0, 4);
+    try {
+      const data = await getProducts();
+
+      if (!data.success) {
+        setRelatedProducts([]);
+        return;
+      }
+
+      const products = data.products || [];
+
+      // Products from the same subcategory
+      const sameSubCategory = products.filter(
+        (item) =>
+          item._id !== product._id && item.subCategory === product.subCategory,
+      );
+
+      // Other products from the same category
+      const sameCategory = products.filter(
+        (item) =>
+          item._id !== product._id &&
+          item.category === product.category &&
+          item.subCategory !== product.subCategory,
+      );
+
+      // Prioritize closest matches
+      const related = [...sameSubCategory, ...sameCategory].slice(0, 4);
+
+      setRelatedProducts(related);
+    } catch (error) {
+      console.error('Failed to fetch related products:', error);
+
+      setRelatedProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (product?._id) {
+      fetchRelatedProducts();
+    }
+  }, [product?._id]);
+
+  if (loading) {
+    return null;
+  }
 
   if (relatedProducts.length === 0) {
     return null;
@@ -55,15 +92,8 @@ const RelatedProducts = ({ category, subCategory, currentProductId }) => {
 
       {/* Products */}
       <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4">
-        {relatedProducts.map((product) => (
-          <ProductItem
-            key={product._id}
-            id={product._id}
-            image={product.image}
-            name={product.name}
-            price={product.price}
-            category={product.category}
-          />
+        {relatedProducts.map((relatedProduct) => (
+          <ProductItem key={relatedProduct._id} product={relatedProduct} />
         ))}
       </div>
 
