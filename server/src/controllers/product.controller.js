@@ -127,10 +127,10 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// get all products
-export const getProducts = async (req, res) => {
+// get all products by public
+export const getProducts = async (_req, res) => {
   try {
-    const products = await Product.find({}).sort({
+    const products = await Product.find({ inStock: true }).sort({
       createdAt: -1,
     });
 

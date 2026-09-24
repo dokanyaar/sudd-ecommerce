@@ -25,11 +25,12 @@ import OrdersProduct from './pages/admin/OrdersProduct';
 
 import ScrollToTop from './common/ScrollToTop';
 import AdminRoute from './routes/AdminRoute';
+import EditProduct from './pages/admin/EditProduct';
 
 const App = () => {
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="top-center" />
 
       <ScrollToTop />
 
@@ -59,6 +60,7 @@ const App = () => {
         >
           <Route index element={<DashboardHome />} />
           <Route path="list" element={<ListProduct />} />
+          <Route path="list/edit/:productId" element={<EditProduct />} />
           <Route path="add" element={<AddProduct />} />
           <Route path="orders" element={<OrdersProduct />} />
         </Route>

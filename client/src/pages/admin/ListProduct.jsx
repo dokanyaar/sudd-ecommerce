@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Package, Plus, Search, Trash2 } from 'lucide-react';
+import { Package, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -77,8 +77,6 @@ const ListProduct = () => {
       {/* Header */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm text-gray-500">Products</p>
-
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-gray-950 sm:text-3xl">
             All products
           </h1>
@@ -198,15 +196,27 @@ const ListProduct = () => {
                     </td>
 
                     {/* Action */}
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => removeProduct(product._id)}
-                        className="inline-flex h-9 w-9 cursor-pointer items-center justify-center text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-                        aria-label={`Delete ${product.name}`}
-                      >
-                        <Trash2 size={17} strokeWidth={1.7} />
-                      </button>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          to={`/dashboard/list/edit/${product._id}`}
+                          className="inline-flex h-9 w-9 items-center justify-center text-gray-400 transition hover:bg-gray-100 hover:text-black"
+                          aria-label={`Edit ${product.name}`}
+                          title="Edit product"
+                        >
+                          <Pencil size={17} strokeWidth={1.7} />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(product._id)}
+                          className="inline-flex h-9 w-9 cursor-pointer items-center justify-center text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                          aria-label={`Delete ${product.name}`}
+                          title="Delete product"
+                        >
+                          <Trash2 size={17} strokeWidth={1.7} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
