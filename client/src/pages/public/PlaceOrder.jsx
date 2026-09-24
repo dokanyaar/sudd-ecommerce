@@ -144,10 +144,6 @@ const PlaceOrder = () => {
           {/* Contact */}
           <section>
             <div className="mb-6">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-gray-400">
-                01
-              </p>
-
               <h2 className="mt-2 text-xl font-medium text-gray-950">
                 Contact information
               </h2>
@@ -201,10 +197,6 @@ const PlaceOrder = () => {
           {/* Delivery */}
           <section className="mt-12 border-t border-gray-200 pt-10">
             <div className="mb-6">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-gray-400">
-                02
-              </p>
-
               <h2 className="mt-2 text-xl font-medium text-gray-950">
                 Delivery address
               </h2>
@@ -276,10 +268,6 @@ const PlaceOrder = () => {
           {/* Payment */}
           <section className="mt-12 border-t border-gray-200 pt-10">
             <div className="mb-6">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-gray-400">
-                03
-              </p>
-
               <h2 className="mt-2 text-xl font-medium text-gray-950">
                 Payment method
               </h2>

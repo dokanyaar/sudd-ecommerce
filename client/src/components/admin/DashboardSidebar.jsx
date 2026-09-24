@@ -7,8 +7,10 @@ import {
   ShoppingBag,
   X,
 } from 'lucide-react';
+import useAuth from '../../hooks/useAuth';
 
 const DashboardSidebar = ({ open, onClose }) => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const links = [
@@ -35,10 +37,17 @@ const DashboardSidebar = ({ open, onClose }) => {
     },
   ];
 
-  const handleLogout = () => {
-    // Temporary until authentication is implemented.
-    onClose();
-    navigate('/');
+  const handleLogout = async () => {
+    const result = await logout();
+
+    if (result.success) {
+      toast.success(result.message);
+
+      onClose();
+      navigate('/');
+    } else {
+      toast.error(result.message);
+    }
   };
 
   return (
@@ -53,7 +62,7 @@ const DashboardSidebar = ({ open, onClose }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed bottom-0 left-0 top-0 z-50 w-64 border-r border-gray-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:z-30 lg:h-[calc(100vh-72px)] lg:shrink-0 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:z-30 lg:h-[calc(100vh-72px)] lg:shrink-0 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -1,10 +1,25 @@
 import { Link } from 'react-router-dom';
+
 import { Heart } from 'lucide-react';
 
+import useWishlist from '../../hooks/useWishlist';
+
 const ProductItem = ({ product }) => {
-  const { slug, images, name, price, category } = product;
+  const { slug, images, name, price, category, _id } = product;
+
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
   const productImage = images?.[0]?.url;
+
+  const saved = isInWishlist(_id);
+
+  const handleWishlist = (e) => {
+    // Prevent the parent Link from opening the product page
+    e.preventDefault();
+    e.stopPropagation();
+
+    toggleWishlist(product);
+  };
 
   return (
     <Link to={`/product/${slug}`} className="group block">
@@ -20,13 +35,21 @@ const ProductItem = ({ product }) => {
         {/* Wishlist */}
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-          }}
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 opacity-0 shadow-sm backdrop-blur-sm transition-all duration-300 hover:text-black group-hover:opacity-100"
-          aria-label={`Add ${name} to wishlist`}
+          onClick={handleWishlist}
+          className={`absolute right-3 top-3 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300 hover:bg-white hover:text-black ${
+            saved
+              ? 'text-black opacity-100'
+              : 'text-gray-700 opacity-0 group-hover:opacity-100'
+          }`}
+          aria-label={
+            saved ? `Remove ${name} from wishlist` : `Add ${name} to wishlist`
+          }
         >
-          <Heart size={17} strokeWidth={1.7} />
+          <Heart
+            size={17}
+            strokeWidth={1.7}
+            fill={saved ? 'currentColor' : 'none'}
+          />
         </button>
       </div>
 

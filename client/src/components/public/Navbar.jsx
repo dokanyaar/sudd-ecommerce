@@ -14,18 +14,17 @@ import {
 import useAuth from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import useCart from '../../hooks/useCart';
+import useWishlist from '../../hooks/useWishlist';
 
 const Navbar = () => {
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
 
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   const accountRef = useRef(null);
-
-  // const cartCount = 0;
-  const wishlistCount = 0;
 
   const navLinks = [
     { name: 'Home', path: '/' },

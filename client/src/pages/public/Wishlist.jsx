@@ -1,29 +1,35 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
 import { ArrowRight, Heart, ShoppingBag, Trash2 } from 'lucide-react';
-import { products } from '../../data/products';
+
+import useWishlist from '../../hooks/useWishlist';
+import useCart from '../../hooks/useCart';
 
 const Wishlist = () => {
-  // Temporary frontend data.
-  // Later this will come from WishlistContext/backend.
-  const [wishlistItems, setWishlistItems] = useState([
-    products[0],
-    products[4],
-    products[6],
-    products[7],
-  ]);
+  const navigate = useNavigate();
 
-  const removeFromWishlist = (productId) => {
-    setWishlistItems((prev) =>
-      prev.filter((product) => product._id !== productId),
-    );
-  };
+  const { wishlistItems, wishlistCount, removeFromWishlist } = useWishlist();
+
+  const { addToCart } = useCart();
 
   const handleAddToCart = (product) => {
-    // Later:
-    // addToCart(product._id, selectedSize)
+    const hasSizes = product.sizes?.length > 0;
+    const hasColors = product.colors?.length > 0;
 
-    console.log('Add to cart:', product);
+    // Product options must be selected first
+    if (hasSizes || hasColors) {
+      navigate(`/product/${product.slug}`);
+      return;
+    }
+
+    addToCart({
+      productId: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0]?.url || '',
+      size: null,
+      color: null,
+    });
   };
 
   if (wishlistItems.length === 0) {
@@ -35,10 +41,6 @@ const Wishlist = () => {
       {/* Header */}
       <div className="mb-10 flex flex-col gap-5 border-b border-gray-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-gray-500">
-            Saved items
-          </p>
-
           <h1 className="text-3xl font-medium tracking-tight text-gray-950 sm:text-4xl">
             My wishlist
           </h1>
@@ -50,7 +52,7 @@ const Wishlist = () => {
         </div>
 
         <p className="text-sm text-gray-500">
-          {wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'}
+          {wishlistCount} {wishlistCount === 1 ? 'item' : 'items'}
         </p>
       </div>
 
@@ -71,14 +73,18 @@ const Wishlist = () => {
 
 const WishlistItem = ({ product, onRemove, onAddToCart }) => {
   const hasSizes = product.sizes?.length > 0;
+  const hasColors = product.colors?.length > 0;
+  const hasOptions = hasSizes || hasColors;
+
+  const productUrl = `/product/${product.slug}`;
 
   return (
     <article className="group">
       {/* Image */}
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-100">
-        <Link to={`/product/${product._id}`}>
+        <Link to={productUrl}>
           <img
-            src={product.image?.[0]}
+            src={product.images?.[0]?.url}
             alt={product.name}
             className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           />
@@ -108,48 +114,40 @@ const WishlistItem = ({ product, onRemove, onAddToCart }) => {
 
         <div className="flex items-start justify-between gap-3">
           <Link
-            to={`/product/${product._id}`}
+            to={productUrl}
             className="text-sm font-medium leading-5 text-gray-800 transition hover:text-black"
           >
             {product.name}
           </Link>
 
           <p className="shrink-0 text-sm font-medium text-gray-950">
-            KSh {product.price.toLocaleString()}
+            KSh {Number(product.price).toLocaleString()}
           </p>
         </div>
 
-        {/* Action */}
+        {/* Add to cart / choose options */}
         <button
           type="button"
           disabled={!product.inStock}
-          onClick={() => {
-            if (hasSizes) {
-              // User needs to select a size first.
-              // Send them to the product page for now.
-              return;
-            }
-
-            onAddToCart(product);
-          }}
+          onClick={() => onAddToCart(product)}
           className="mt-4 flex h-10 w-full cursor-pointer items-center justify-center gap-2 border border-gray-200 text-xs font-medium text-gray-800 transition hover:border-black hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
         >
           <ShoppingBag size={15} strokeWidth={1.7} />
 
-          {product.inStock
-            ? hasSizes
+          {!product.inStock
+            ? 'Out of stock'
+            : hasOptions
               ? 'Choose options'
-              : 'Add to cart'
-            : 'Out of stock'}
+              : 'Add to cart'}
         </button>
 
-        {/* Products with size options */}
-        {product.inStock && hasSizes && (
+        {/* Product options */}
+        {product.inStock && hasOptions && (
           <Link
-            to={`/product/${product._id}`}
+            to={productUrl}
             className="mt-2 flex items-center justify-center gap-1 text-xs text-gray-400 transition hover:text-black"
           >
-            Select size
+            Select options
             <ArrowRight size={12} />
           </Link>
         )}

@@ -16,9 +16,12 @@ import toast from 'react-hot-toast';
 import RelatedProducts from '../../components/public/RelatedProducts';
 import { getProductBySlug } from '../../services/product.service';
 import useCart from '../../hooks/useCart';
+import useWishlist from '../../hooks/useWishlist';
 
 const Product = () => {
   const { addToCart } = useCart();
+
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
   const { slug } = useParams();
 
@@ -114,6 +117,8 @@ const Product = () => {
     );
   }
 
+  const saved = isInWishlist(productData._id);
+
   return (
     <main className="py-8 sm:py-10">
       {/* Breadcrumb */}
@@ -177,10 +182,21 @@ const Product = () => {
             {/* Wishlist */}
             <button
               type="button"
-              className="absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm backdrop-blur transition hover:bg-white hover:text-black"
-              aria-label="Add to wishlist"
+              onClick={() => toggleWishlist(productData)}
+              className={`absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:bg-white hover:text-black ${
+                saved ? 'text-black' : 'text-gray-700'
+              }`}
+              aria-label={
+                saved
+                  ? `Remove ${productData.name} from wishlist`
+                  : `Add ${productData.name} to wishlist`
+              }
             >
-              <Heart size={18} strokeWidth={1.7} />
+              <Heart
+                size={18}
+                strokeWidth={1.7}
+                fill={saved ? 'currentColor' : 'none'}
+              />
             </button>
           </div>
         </div>

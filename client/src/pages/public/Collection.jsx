@@ -140,12 +140,8 @@ const Collection = () => {
     <main className="py-10 sm:py-14">
       {/* Page Header */}
       <div className="mb-10 border-b border-gray-200 pb-8 sm:mb-12">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-gray-500">
-          Sudd Shop
-        </p>
-
         <h1 className="text-3xl font-medium tracking-tight text-gray-950 sm:text-4xl">
-          Shop
+          Collections
         </h1>
 
         <p className="mt-3 max-w-lg text-sm leading-6 text-gray-500">
